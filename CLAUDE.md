@@ -154,12 +154,49 @@ print(estimate_cost(len(urls)))  # shows $/page and total before committing
 - **Need structured CSV with field mapping** â†’ web-scraper skill templates
 - **Firecrawl** â†’ not used. SeleniumBase UC is the terminal fallback.
 
+
+## Spider Cloud API — Streaming Gotcha
+
+Spider Cloud returns **chunked JSONL**, not standard JSON. Never call `.json()` on the response.
+
+```python
+# WRONG — causes "Response ended prematurely" or JSONDecodeError
+resp = requests.post(ENDPOINT, json=payload, headers=headers)
+data = resp.json()  # will fail on chunked JSONL
+
+# CORRECT — stream=True + iter_lines()
+resp = requests.post(ENDPOINT, json=payload, headers=headers, stream=True)
+for line in resp.iter_lines():
+    if line:
+        record = json.loads(line)
+        break
+
+# ALSO CORRECT — aiohttp (used in spider_client.py)
+async with session.post(ENDPOINT, json=payload) as resp:
+    async for line in resp.content:
+        record = json.loads(line)
+        break
+```
+
+This applies to all Spider Cloud endpoints. If a Cloud tier (T4-T7) returns errors that CLI doesn't, check for `.json()` usage first — it's a false negative, not an account issue.
 ## Installation
 
 ```bash
 # CLI (Rust binary)
 cargo install spider_cli
 
+
+### Windows Prerequisites
+
+**MSVC C++ Build Tools required before `cargo install`.**
+Without them, `cargo install spider_cli` fails silently on Windows (Rust defaults to the MSVC toolchain).
+
+1. Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+2. Select "Desktop development with C++" workload
+3. Restart your terminal after install
+4. Then run `cargo install spider_cli`
+
+If you see errors like `LINK : fatal error LNK1104` or `linker 'link.exe' not found`, this is the cause.
 # With smart mode (HTTP-first, browser fallback)
 cargo install -F smart spider_cli
 
@@ -169,3 +206,4 @@ pip install aiohttp python-dotenv
 # Required env var
 SPIDER_API_KEY=your_key_here  # get from spider.cloud dashboard
 ```
+
