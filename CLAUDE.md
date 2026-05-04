@@ -15,19 +15,18 @@ Start at Tier 1. Escalate only when the current tier fails or is blocked. Never 
 | 5 | Spider Cloud API â€” chrome + readability | ~$0.005/page | JS-heavy sites, need clean markdown for LLM input |
 | 6 | Spider Cloud API â€” proxy enabled | ~$0.0075/page | Rate-limited or geo-restricted sites |
 | 7 | Spider Cloud â€” unblocker mode | ~$0.01/page | Moderate bot protection (not DataDome/CF challenges) |
-| 8 | SeleniumBase UC (Python) | Time only | DataDome, Cloudflare JS challenges |
-| 9 | Firecrawl | API cost | Last resort â€” enterprise anti-bot |
+| 8 | SeleniumBase UC (Python) | Time only | DataDome, Cloudflare JS challenges â€” last resort |
 
 **Tiers 1-3:** Spider CLI binary (this repo). Install: `cargo install spider_cli`
 **Tiers 4-7:** Spider Cloud API. Clients in `gtme-skills/skills/*/spider_client.py` and `leadgrow-hq/tools/playbook-engine/src/spider.ts`
-**Tiers 8-9:** Separate tools. See `leadgrow-hq/gtme-skills/skills/web-scraper/`
+**Tier 8:** Separate tool. See `leadgrow-hq/gtme-skills/skills/web-scraper/`
 
 ## Escalation Decision
 
 ```
 Try CLI HTTP â†’ blocked/empty? â†’ Try CLI headless â†’ JS challenge? â†’ Try Cloud chrome
 â†’ rate limited? â†’ Add proxy â†’ bot protected? â†’ Use unblocker
-â†’ DataDome/CF challenge? â†’ Drop to SeleniumBase
+â†’ DataDome/CF challenge? â†’ Drop to SeleniumBase (Tier 8)
 ```
 
 If a site is known-hard (DataDome confirmed, Cloudflare JS verified), skip directly to Tier 8. Don't waste 7 attempts on it.
@@ -145,7 +144,7 @@ print(estimate_cost(len(urls)))  # shows $/page and total before committing
 | JS-heavy SaaS site | 2-3 | CLI headless + stealth |
 | Gated/auth-walled content | 2 + cookie | CLI headless + `--cookie` |
 | Protected site (no DataDome) | 7 | Cloud unblocker mode |
-| DataDome-protected | 8 | SeleniumBase UC (skip Spider entirely) |
+| DataDome-protected | 8 | SeleniumBase UC â€” skip all Spider tiers |
 
 ## When NOT to Use Spider
 
@@ -153,6 +152,7 @@ print(estimate_cost(len(urls)))  # shows $/page and total before committing
 - **LinkedIn** â†’ use linkedin skill
 - **DataDome / Cloudflare JS challenge confirmed** â†’ go straight to SeleniumBase UC (Tier 8)
 - **Need structured CSV with field mapping** â†’ web-scraper skill templates
+- **Firecrawl** â†’ not used. SeleniumBase UC is the terminal fallback.
 
 ## Installation
 
